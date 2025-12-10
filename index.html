@@ -268,6 +268,66 @@
       transform:translateY(-4px);
     }
   }
+/* =========================================
+   Bryan mode button & overrides
+   ========================================= */
+
+/* Bottom-left semi-transparent "Bryan" button */
+.bryan-btn{
+  position:fixed;
+  left:12px;
+  bottom:12px;
+  z-index:60;
+  padding:6px 14px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.6);
+  background:rgba(15,23,42,.65);
+  color:#e5e7eb;
+  font-size:.78rem;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  cursor:pointer;
+  backdrop-filter:blur(6px);
+  opacity:.65;
+  transition:opacity .2s ease, box-shadow .2s ease, transform .15s ease, background .2s ease;
+}
+.bryan-btn:hover{
+  opacity:1;
+  box-shadow:0 0 16px rgba(148,163,255,.45);
+  transform:translateY(-1px);
+}
+.bryan-btn:active{
+  transform:translateY(0);
+}
+
+/* When Bryan mode is ON, show a tiny glow on the button */
+body.bryan-mode .bryan-btn{
+  opacity:1;
+  border-color:rgba(250,204,21,.9);
+  box-shadow:0 0 16px rgba(250,204,21,.6);
+}
+
+/* Bryan mode: unlock everything visually + interactively */
+body.bryan-mode .week-past summary,
+body.bryan-mode .week-future summary{
+  opacity:1;
+  filter:none;
+  pointer-events:auto;
+}
+
+/* Let panels show normally in Bryan mode */
+body.bryan-mode .week-past .panel,
+body.bryan-mode .week-future .panel{
+  display:block !important;
+}
+
+/* Months are all full-strength in Bryan mode */
+body.bryan-mode .month{
+  opacity:1;
+  filter:none;
+}
+
 </style>
 </head>
 <body>
@@ -4461,5 +4521,37 @@
     });
   });
 </script>
+  <script>
+(function(){
+  const btn = document.getElementById('bryanBtn');
+  if (!btn) return;
+
+  const PASSWORD = "him141amra803";
+
+  btn.addEventListener('click', () => {
+    // If already in Bryan mode, clicking again turns it off
+    if (document.body.classList.contains('bryan-mode')) {
+      document.body.classList.remove('bryan-mode');
+      alert("Bryan mode: OFF (student view)");
+      return;
+    }
+
+    const input = prompt("Enter password for Bryan mode:");
+    if (input === null) {
+      // user cancelled
+      return;
+    }
+    if (input === PASSWORD) {
+      document.body.classList.add('bryan-mode');
+      alert("Bryan mode: ON\nAll weeks unlocked for teacher view.");
+    } else {
+      alert("Password incorrect.");
+    }
+  });
+})();
+</script>
+
+  <button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
+
 </body>
 </html>
