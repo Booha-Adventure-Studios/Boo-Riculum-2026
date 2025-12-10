@@ -26,14 +26,17 @@
     height:100%;
   }
 
-  body{
+body{
+    position:relative;  /* ← ADD THIS */
+
     font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;
     color:var(--ink);
     background:var(--bg);
     line-height:1.55;
     overflow-y:auto;
     -webkit-overflow-scrolling:touch; /* smooth finger scroll on iOS */
-  }
+}
+
 
   /* Header */
   header{
@@ -288,7 +291,7 @@ body.bryan-mode .month{
 
 /* Bottom-left semi-transparent "Bryan" button */
 .bryan-btn{
-  position:fixed;
+  position:absolute;   /* was fixed */
   left:12px;
   bottom:12px;
   z-index:60;
@@ -306,6 +309,7 @@ body.bryan-mode .month{
   opacity:.65;
   transition:opacity .2s ease, box-shadow .2s ease, transform .15s ease, background .2s ease;
 }
+
 .bryan-btn:hover{
   opacity:1;
   box-shadow:0 0 16px rgba(148,163,255,.45);
