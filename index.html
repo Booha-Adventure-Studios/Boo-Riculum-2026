@@ -4417,7 +4417,7 @@ body.bryan-mode .month{
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
   const teachingWeekId = getWeekIdFromCalendar(now);
-  const windowWeekId = getWeekIdFromCalendar(new Date(now.getTime() + OPEN_BEFORE_DAYS * MS_PER_DAY));
+  const windowWeekId   = getWeekIdFromCalendar(new Date(now.getTime() + OPEN_BEFORE_DAYS * MS_PER_DAY));
 
   const teachingIndex = teachingWeekId ? weekOrder.indexOf(teachingWeekId) : -1;
   const windowIndex   = windowWeekId   ? weekOrder.indexOf(windowWeekId)   : -1;
@@ -4512,15 +4512,15 @@ body.bryan-mode .month{
   // ----------------------------------------
   weekNodes.forEach(el => {
     el.addEventListener('toggle', () => {
-      // close other details if this one just opened
       if (el.open) {
+        // close other details if this one just opened
         weekNodes.forEach(other => {
           if (other !== el && other.open) {
             other.open = false;
           }
         });
 
-        // Only sparkle for active weeks (student-visible)
+        // Only sparkle for active weeks (student-visible 4-week window)
         if (el.classList.contains('week-active')) {
           el.classList.add('sparkle-on');
           setTimeout(() => {
@@ -4565,3 +4565,6 @@ body.bryan-mode .month{
     });
   })();
 </script>
+
+</body>
+</html>
