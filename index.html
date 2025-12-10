@@ -4520,8 +4520,13 @@ body.bryan-mode .month{
       }, 700);
     });
   });
+<script>
+  // ... your Booha 4-week window logic script ...
 </script>
-  <script>
+
+<button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
+
+<script>
 (function(){
   const btn = document.getElementById('bryanBtn');
   if (!btn) return;
@@ -4538,7 +4543,6 @@ body.bryan-mode .month{
 
     const input = prompt("Enter password for Bryan mode:");
     if (input === null) {
-      // user cancelled
       return;
     }
     if (input === PASSWORD) {
@@ -4550,8 +4554,6 @@ body.bryan-mode .month{
   });
 })();
 </script>
-
-  <button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
 
 </body>
 </html>
