@@ -14,7 +14,10 @@
     --pink:#ff4da6; --yellow:#ffdf4d; --blue:#45e0ff; --purple:#b366ff;
     --pink-10:rgba(255,77,166,.10); --yellow-10:rgba(255,223,77,.10);
     --blue-10:rgba(69,224,255,.10); --purple-10:rgba(179,102,255,.10);
-    --slime:#66ff6b; --slime-glow:0 0 0 3px rgba(102,255,107,.35), 0 12px 30px rgba(102,255,107,.12);
+    --slime:#66ff6b;
+    --slime-glow:0 0 0 3px rgba(102,255,107,.35),0 12px 30px rgba(102,255,107,.12);
+    --gold:#ffdf4d;
+    --gold-glow:0 0 0 3px rgba(255,223,77,.55),0 0 26px rgba(255,223,77,.75);
   }
 
   html, body{
@@ -111,6 +114,8 @@
     letter-spacing:.02em;
     border-radius:12px;
     outline:none;
+    position:relative;       /* for sparkles */
+    overflow:hidden;         /* clip sparkles */
   }
   summary::-webkit-details-marker{display:none}
 
@@ -124,6 +129,7 @@
     font-weight:900;
     font-size:18px;
     box-shadow:inset 0 0 0 2px #00000010, 0 6px 18px #0006;
+    transition:transform .18s ease, box-shadow .18s ease;
   }
   .pink{background:var(--pink)}
   .yellow{background:var(--yellow)}
@@ -176,15 +182,28 @@
      4-week window visual states
      ========================================= */
 
-  /* Active weeks (current + previous up to 3) = bright + clickable */
+  /* Active weeks in the 4-week window */
   .week-active summary{
     box-shadow:var(--slime-glow);
     border:1px solid var(--slime);
-    background:radial-gradient(circle at top left, rgba(102,255,107,.18), transparent 55%);
+    background:radial-gradient(circle at top left, rgba(102,255,107,.16), transparent 55%);
   }
   .week-active .wknum{
     box-shadow:0 0 0 2px rgba(0,0,0,.7), 0 0 0 3px rgba(102,255,107,.55);
     transform:translateY(-1px);
+  }
+
+  /* CURRENT week – gold glow on top of active styling */
+  .week-current summary{
+    border-color:var(--gold) !important;
+    box-shadow:var(--gold-glow) !important;
+    background:
+      radial-gradient(circle at top left, rgba(255,223,77,.24), transparent 55%),
+      radial-gradient(circle at bottom right, rgba(255,255,255,.06), transparent 60%);
+  }
+  .week-current .wknum{
+    box-shadow:0 0 0 2px rgba(0,0,0,.8), 0 0 0 3px rgba(255,223,77,.8);
+    transform:translateY(-2px) scale(1.03);
   }
 
   /* Past and future weeks – visible but grey + unclickable */
@@ -215,6 +234,39 @@
   .month.current{
     opacity:1;
     filter:none;
+  }
+
+  /* =========================================
+     Sparkle animation when a week opens
+     ========================================= */
+
+  .week.sparkle-on summary::after{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    border-radius:inherit;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(255,255,255,.55), transparent 55%),
+      radial-gradient(circle at 80% 100%, rgba(255,223,77,.7), transparent 60%);
+    mix-blend-mode:screen;
+    opacity:0;
+    pointer-events:none;
+    animation:weekSparkle .6s ease-out forwards;
+  }
+
+  @keyframes weekSparkle{
+    0%{
+      opacity:0;
+      transform:translateY(6px);
+    }
+    10%{
+      opacity:1;
+      transform:translateY(0);
+    }
+    100%{
+      opacity:0;
+      transform:translateY(-4px);
+    }
   }
 </style>
 </head>
@@ -4234,7 +4286,6 @@
   // Jan–Dec 2026 Boo-riculum
   // ===============================
 
-  // 1. Define the weeks in order (must match your HTML layout)
   const weekOrder = [
     "2026-Jan-W1","2026-Jan-W2","2026-Jan-W3","2026-Jan-W4",
     "2026-Feb-W1","2026-Feb-W2","2026-Feb-W3","2026-Feb-W4",
@@ -4252,16 +4303,17 @@
 
   const BOOHA_YEAR = 2026;
   const monthLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const OPEN_BEFORE_DAYS = 7; // 🔓 open each week 7 days before it starts
 
-  function getCurrentWeekIdFromCalendar() {
-    const now = new Date();
+  function getWeekIdFromCalendar(baseDate) {
+    const now = baseDate || new Date();
     const year = now.getFullYear();
     const monthIndex = now.getMonth(); // 0=Jan ... 11=Dec
     const day = now.getDate();
 
-    // If we're not in the Booha year yet (or it's over), there is no active week
+    // Only active during Booha year
     if (year !== BOOHA_YEAR) {
-      return null; // pre- or post-season → everything locked
+      return null;
     }
 
     // Decide week-of-month (1–4) by day ranges
@@ -4278,17 +4330,34 @@
     const id = `${BOOHA_YEAR}-${monthLabel}-W${weekNum}`;
 
     if (!weekOrder.includes(id)) {
-      console.warn("Current calendar week ID not found in weekOrder:", id);
+      console.warn("Calendar week ID not found in weekOrder:", id);
       return null;
     }
     return id;
   }
 
-  const currentWeekId = getCurrentWeekIdFromCalendar();
+  // -------------------------------
+  // 1. Figure out:
+  //    - real “teaching week” (gold)
+  //    - 4-week open window (7 days early)
+  // -------------------------------
+  const now = new Date();
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-  // 2. Get all week <details> in the same order as weekOrder
+  // Real current teaching week (used for gold highlight)
+  const teachingWeekId = getWeekIdFromCalendar(now);
+
+  // Week that should be available now (opens 7 days early)
+  const windowWeekId = getWeekIdFromCalendar(new Date(now.getTime() + OPEN_BEFORE_DAYS * MS_PER_DAY));
+
+  const teachingIndex = teachingWeekId ? weekOrder.indexOf(teachingWeekId) : -1;
+  const windowIndex   = windowWeekId   ? weekOrder.indexOf(windowWeekId)   : -1;
+
   const weekNodes = Array.from(document.querySelectorAll('.month > details'));
   const monthSections = Array.from(document.querySelectorAll('.month'));
+
+  // Add .week class so CSS like .week-active, .week-current, .sparkle-on works
+  weekNodes.forEach(el => el.classList.add('week'));
 
   if (weekNodes.length !== weekOrder.length) {
     console.warn(
@@ -4298,78 +4367,99 @@
     );
   }
 
-  // If no current week (e.g., Dec 2025, or any year ≠ 2026):
-  // → everything visible but greyed out and unclickable.
-  if (!currentWeekId) {
+  // If nothing is active yet (before 2026 or far after): everything = future/locked.
+  if (windowIndex === -1) {
     weekNodes.forEach(el => {
-      el.classList.remove('week-active', 'week-past', 'week-future');
-      el.classList.add('week-future'); // future style = grey + locked
+      el.classList.remove('week-active','week-past','week-future','week-current');
+      el.classList.add('week-future');
     });
-
     monthSections.forEach(month => {
-      month.classList.remove('current', 'month-active', 'month-past', 'month-future');
-      month.classList.add('month-future'); // dim but visible
+      month.classList.remove('current','month-active','month-past','month-future');
+      month.classList.add('month-future');
     });
-
-    // Nothing else to do
   } else {
-    // 3. Find the current index and build the active 4-week window
-    const currentIndex = weekOrder.indexOf(currentWeekId);
-    let windowIndices = [];
-
-    if (currentIndex !== -1) {
-      const startIdx = Math.max(0, currentIndex - 3); // previous 3 + current
-      for (let i = startIdx; i <= currentIndex; i++) {
-        windowIndices.push(i);
-      }
-    } else {
-      console.warn("currentWeekId not found in weekOrder:", currentWeekId);
+    // -------------------------------
+    // 2. Build the 4-week window around windowIndex
+    //    (previous 3 + current window week)
+    // -------------------------------
+    const windowIndices = [];
+    const startIdx = Math.max(0, windowIndex - 3);
+    for (let i = startIdx; i <= windowIndex; i++) {
+      windowIndices.push(i);
     }
 
-    // 4. Apply week-active / week-past / week-future
+    // -------------------------------
+    // 3. Apply week-active / week-past / week-future / week-current
+    // -------------------------------
     weekNodes.forEach((el, idx) => {
-      el.classList.remove('week-active', 'week-past', 'week-future');
+      el.classList.remove('week-active','week-past','week-future','week-current');
 
-      if (currentIndex === -1) {
+      if (idx >= startIdx && idx <= windowIndex) {
+        // In active 4-week window
+        el.classList.add('week-active');
+      } else if (idx < startIdx) {
+        // Older than the 4-week window
+        el.classList.add('week-past');
+      } else {
+        // Later than the 4-week window
         el.classList.add('week-future');
-        return;
       }
 
-      if (windowIndices.includes(idx)) {
-        // current week + previous up to 3 → AVAILABLE (bright & clickable)
-        el.classList.add('week-active');
-      } else if (idx < currentIndex) {
-        el.classList.add('week-past');   // older, grey + locked
-      } else if (idx > currentIndex) {
-        el.classList.add('week-future'); // later, grey + locked
+      // Gold glow for the *real* current teaching week (if we’re in-season)
+      if (teachingIndex !== -1 && idx === teachingIndex && el.classList.contains('week-active')) {
+        el.classList.add('week-current');
       }
     });
 
-    // 5. Mark months as active / past / future based on their weeks
+    // -------------------------------
+    // 4. Month states
+    //    - month.current: contains the real current teaching week
+    //    - month-active : has any active week
+    //    - month-past   : only past weeks
+    //    - month-future : only future weeks
+    // -------------------------------
     monthSections.forEach(month => {
-      month.classList.remove('current', 'month-active', 'month-past', 'month-future');
+      month.classList.remove('current','month-active','month-past','month-future');
 
       const weeksInMonth = weekNodes.filter(w => w.closest('.month') === month);
-      if (!weeksInMonth.length || currentIndex === -1) return;
+      if (!weeksInMonth.length) return;
 
       const indices = weeksInMonth.map(w => weekNodes.indexOf(w));
 
-      const hasActive = indices.some(i => windowIndices.includes(i));
-      const allPast   = indices.every(i => i < currentIndex - 3);
-      const allFuture = indices.every(i => i > currentIndex);
+      const hasActive       = indices.some(i => windowIndices.includes(i));
+      const hasTeachingWeek = teachingIndex !== -1 && indices.includes(teachingIndex);
+      const allPast         = indices.every(i => i < startIdx);
+      const allFuture       = indices.every(i => i > windowIndex);
 
-      if (hasActive) {
-        month.classList.add('current', 'month-active');
-      } else if (allPast) {
-        month.classList.add('month-past');
+      if (hasTeachingWeek) {
+        month.classList.add('current','month-active');
+      } else if (hasActive) {
+        month.classList.add('month-active');
       } else if (allFuture) {
         month.classList.add('month-future');
+      } else if (allPast) {
+        month.classList.add('month-past');
       } else {
-        // mixed edge case; treat as past
+        // mixed edge (straddling the window) → treat as past
         month.classList.add('month-past');
       }
     });
   }
+
+  // -------------------------------
+  // 5. Sparkles when an active week is opened
+  // -------------------------------
+  weekNodes.forEach(el => {
+    el.addEventListener('toggle', () => {
+      if (!el.open) return;
+      if (!el.classList.contains('week-active')) return;
+
+      el.classList.add('sparkle-on');
+      setTimeout(() => {
+        el.classList.remove('sparkle-on');
+      }, 700);
+    });
+  });
 </script>
 </body>
 </html>
