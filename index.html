@@ -193,18 +193,19 @@
     transform:translateY(-1px);
   }
 
-  /* CURRENT week – gold glow on top of active styling */
-  .week-current summary{
-    border-color:var(--gold) !important;
-    box-shadow:var(--gold-glow) !important;
-    background:
-      radial-gradient(circle at top left, rgba(255,223,77,.24), transparent 55%),
-      radial-gradient(circle at bottom right, rgba(255,255,255,.06), transparent 60%);
-  }
-  .week-current .wknum{
-    box-shadow:0 0 0 2px rgba(0,0,0,.8), 0 0 0 3px rgba(255,223,77,.8);
-    transform:translateY(-2px) scale(1.03);
-  }
+  /* CURRENT week – green glow on top of active styling */
+.week-current summary{
+  border-color:var(--slime) !important;
+  box-shadow:var(--slime-glow) !important;
+  background:
+    radial-gradient(circle at top left, rgba(102,255,107,.28), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(255,255,255,.06), transparent 60%);
+}
+.week-current .wknum{
+  box-shadow:0 0 0 2px rgba(0,0,0,.8), 0 0 0 3px rgba(102,255,107,.9);
+  transform:translateY(-2px) scale(1.03);
+}
+
 
   /* Past and future weeks – visible but grey + unclickable */
   .week-past summary,
@@ -221,20 +222,33 @@
     display:none !important;
   }
 
-  /* Month states, based on whether they contain active weeks */
-  .month-past{
-    opacity:.35;
-    filter:grayscale(.9);
-  }
-  .month-future{
-    opacity:.45;
-    filter:grayscale(.9);
-  }
-  .month-active,
-  .month.current{
-    opacity:1;
-    filter:none;
-  }
+/* Month states, based on whether they contain active weeks */
+.month-past{
+  opacity:.35;
+  filter:grayscale(.9);
+  pointer-events:none; /* locked for students */
+}
+
+.month-future{
+  opacity:.45;
+  filter:grayscale(.9);
+  pointer-events:none; /* locked for students */
+}
+
+.month-active,
+.month.current{
+  opacity:1;
+  filter:none;
+  pointer-events:auto; /* clickable */
+}
+
+/* Bryan mode re-enables everything */
+body.bryan-mode .month{
+  opacity:1;
+  filter:none;
+  pointer-events:auto;
+}
+
 
   /* =========================================
      Sparkle animation when a week opens
@@ -4363,7 +4377,7 @@ body.bryan-mode .month{
 
   const BOOHA_YEAR = 2026;
   const monthLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const OPEN_BEFORE_DAYS = 7; // 🔓 open each week 7 days before it starts
+  const OPEN_BEFORE_DAYS = 7; // open 1 week before teaching week
 
   function getWeekIdFromCalendar(baseDate) {
     const now = baseDate || new Date();
@@ -4371,12 +4385,10 @@ body.bryan-mode .month{
     const monthIndex = now.getMonth(); // 0=Jan ... 11=Dec
     const day = now.getDate();
 
-    // Only active during Booha year
     if (year !== BOOHA_YEAR) {
       return null;
     }
 
-    // Decide week-of-month (1–4) by day ranges
     let weekNum = 1;
     if (day >= 8 && day <= 14) {
       weekNum = 2;
@@ -4386,7 +4398,7 @@ body.bryan-mode .month{
       weekNum = 4;
     }
 
-    const monthLabel = monthLabels[monthIndex]; // e.g. "Jan", "Feb"
+    const monthLabel = monthLabels[monthIndex];
     const id = `${BOOHA_YEAR}-${monthLabel}-W${weekNum}`;
 
     if (!weekOrder.includes(id)) {
@@ -4396,18 +4408,15 @@ body.bryan-mode .month{
     return id;
   }
 
-  // -------------------------------
-  // 1. Figure out:
-  //    - real “teaching week” (gold)
-  //    - 4-week open window (7 days early)
-  // -------------------------------
+  // ------------------------------------------------
+  // 1. Determine:
+  //    - teachingWeekId (real current week, green)
+  //    - windowWeekId   (4-week window anchor, 7 days early)
+  // ------------------------------------------------
   const now = new Date();
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-  // Real current teaching week (used for gold highlight)
   const teachingWeekId = getWeekIdFromCalendar(now);
-
-  // Week that should be available now (opens 7 days early)
   const windowWeekId = getWeekIdFromCalendar(new Date(now.getTime() + OPEN_BEFORE_DAYS * MS_PER_DAY));
 
   const teachingIndex = teachingWeekId ? weekOrder.indexOf(teachingWeekId) : -1;
@@ -4416,7 +4425,7 @@ body.bryan-mode .month{
   const weekNodes = Array.from(document.querySelectorAll('.month > details'));
   const monthSections = Array.from(document.querySelectorAll('.month'));
 
-  // Add .week class so CSS like .week-active, .week-current, .sparkle-on works
+  // Tag all as .week for CSS
   weekNodes.forEach(el => el.classList.add('week'));
 
   if (weekNodes.length !== weekOrder.length) {
@@ -4427,57 +4436,50 @@ body.bryan-mode .month{
     );
   }
 
-  // If nothing is active yet (before 2026 or far after): everything = future/locked.
+  // If nothing should be open yet (before 2026 or very late)
   if (windowIndex === -1) {
     weekNodes.forEach(el => {
       el.classList.remove('week-active','week-past','week-future','week-current');
-      el.classList.add('week-future');
+      el.classList.add('week-future'); // everything locked/grey
     });
     monthSections.forEach(month => {
       month.classList.remove('current','month-active','month-past','month-future');
       month.classList.add('month-future');
     });
   } else {
-    // -------------------------------
-    // 2. Build the 4-week window around windowIndex
-    //    (previous 3 + current window week)
-    // -------------------------------
+    // ----------------------------------------
+    // 2. Build the 4-week student window
+    //    (windowWeek + previous 3)
+    // ----------------------------------------
     const windowIndices = [];
     const startIdx = Math.max(0, windowIndex - 3);
     for (let i = startIdx; i <= windowIndex; i++) {
       windowIndices.push(i);
     }
 
-    // -------------------------------
+    // ----------------------------------------
     // 3. Apply week-active / week-past / week-future / week-current
-    // -------------------------------
+    // ----------------------------------------
     weekNodes.forEach((el, idx) => {
       el.classList.remove('week-active','week-past','week-future','week-current');
 
       if (idx >= startIdx && idx <= windowIndex) {
-        // In active 4-week window
-        el.classList.add('week-active');
+        el.classList.add('week-active');     // student can open these
       } else if (idx < startIdx) {
-        // Older than the 4-week window
-        el.classList.add('week-past');
+        el.classList.add('week-past');       // older than 4-week window
       } else {
-        // Later than the 4-week window
-        el.classList.add('week-future');
+        el.classList.add('week-future');     // later than 4-week window
       }
 
-      // Gold glow for the *real* current teaching week (if we’re in-season)
+      // current teaching week = green glow
       if (teachingIndex !== -1 && idx === teachingIndex && el.classList.contains('week-active')) {
         el.classList.add('week-current');
       }
     });
 
-    // -------------------------------
-    // 4. Month states
-    //    - month.current: contains the real current teaching week
-    //    - month-active : has any active week
-    //    - month-past   : only past weeks
-    //    - month-future : only future weeks
-    // -------------------------------
+    // ----------------------------------------
+    // 4. Month state classes
+    // ----------------------------------------
     monthSections.forEach(month => {
       month.classList.remove('current','month-active','month-past','month-future');
 
@@ -4500,60 +4502,66 @@ body.bryan-mode .month{
       } else if (allPast) {
         month.classList.add('month-past');
       } else {
-        // mixed edge (straddling the window) → treat as past
         month.classList.add('month-past');
       }
     });
   }
 
-  // -------------------------------
-  // 5. Sparkles when an active week is opened
-  // -------------------------------
+  // ----------------------------------------
+  // 5. Only one tab open at a time + sparkles
+  // ----------------------------------------
   weekNodes.forEach(el => {
     el.addEventListener('toggle', () => {
-      if (!el.open) return;
-      if (!el.classList.contains('week-active')) return;
+      // close other details if this one just opened
+      if (el.open) {
+        weekNodes.forEach(other => {
+          if (other !== el && other.open) {
+            other.open = false;
+          }
+        });
 
-      el.classList.add('sparkle-on');
-      setTimeout(() => {
-        el.classList.remove('sparkle-on');
-      }, 700);
+        // Only sparkle for active weeks (student-visible)
+        if (el.classList.contains('week-active')) {
+          el.classList.add('sparkle-on');
+          setTimeout(() => {
+            el.classList.remove('sparkle-on');
+          }, 700);
+        }
+      }
     });
   });
-<script>
-  // ... your Booha 4-week window logic script ...
 </script>
 
+<!-- Bryan button must come BEFORE the Bryan-mode script -->
 <button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
 
 <script>
-(function(){
-  const btn = document.getElementById('bryanBtn');
-  if (!btn) return;
+  // ===============================
+  // Bryan mode toggle (teacher view)
+  // ===============================
+  (function(){
+    const btn = document.getElementById('bryanBtn');
+    if (!btn) return;
 
-  const PASSWORD = "him141amra803";
+    const PASSWORD = "him141amra803";
 
-  btn.addEventListener('click', () => {
-    // If already in Bryan mode, clicking again turns it off
-    if (document.body.classList.contains('bryan-mode')) {
-      document.body.classList.remove('bryan-mode');
-      alert("Bryan mode: OFF (student view)");
-      return;
-    }
+    btn.addEventListener('click', () => {
+      // Already in Bryan mode? turn it OFF
+      if (document.body.classList.contains('bryan-mode')) {
+        document.body.classList.remove('bryan-mode');
+        alert("Bryan mode: OFF (student view)");
+        return;
+      }
 
-    const input = prompt("Enter password for Bryan mode:");
-    if (input === null) {
-      return;
-    }
-    if (input === PASSWORD) {
-      document.body.classList.add('bryan-mode');
-      alert("Bryan mode: ON\nAll weeks unlocked for teacher view.");
-    } else {
-      alert("Password incorrect.");
-    }
-  });
-})();
+      const input = prompt("Enter password for Bryan mode:");
+      if (input === null) return;
+
+      if (input === PASSWORD) {
+        document.body.classList.add('bryan-mode');
+        alert("Bryan mode: ON\nAll weeks unlocked for teacher view.");
+      } else {
+        alert("Password incorrect.");
+      }
+    });
+  })();
 </script>
-
-</body>
-</html>
