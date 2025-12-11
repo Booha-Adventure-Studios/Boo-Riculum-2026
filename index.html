@@ -464,6 +464,64 @@ body.bryan-mode .month {
 </style>
 </head>
 <body>
+
+<script>
+// ===============================
+//  TOKEN GUARD FOR BOO-RICULUM
+// ===============================
+
+// 1. Read token from URL
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get("token");
+
+// 2. Hide the entire page until validation finishes
+document.documentElement.style.opacity = "0";
+
+// 3. If no token at all → block immediately
+if (!token) {
+  document.body.innerHTML = `
+    <div style="padding:40px; text-align:center; color:white; font-family:system-ui">
+      <h2>Booha Gate Login Required</h2>
+      <p>Please return to Booha Gate and log in again.</p>
+    </div>
+  `;
+  document.documentElement.style.opacity = "1";
+} else {
+  // 4. Validate token using the same backend API as Booha Adventure
+  fetch("https://www.bryan-eikaiwa.com/_functions/validateToken", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token })
+  })
+  .then(res => res.json())
+  .then(data => {
+    // 5. If invalid → block page
+    if (!data.valid) {
+      document.body.innerHTML = `
+        <div style="padding:40px; text-align:center; color:white; font-family:system-ui">
+          <h2>Session Expired</h2>
+          <p>Please return to Booha Gate and log in again.</p>
+        </div>
+      `;
+    }
+
+    // 6. If valid → reveal the page normally
+    document.documentElement.style.opacity = "1";
+  })
+  .catch(err => {
+    console.error("Token check failed:", err);
+    document.body.innerHTML = `
+      <div style="padding:40px; text-align:center; color:white; font-family:system-ui">
+        <h2>Connection Error</h2>
+        <p>Please try again later.</p>
+      </div>
+    `;
+    document.documentElement.style.opacity = "1";
+  });
+}
+</script>
+  
+  
 <header>
   <h1 class="title-en">THE BOO-RICULUM</h1>
   <div class="title-jp">ブー・リキュラム</div>
