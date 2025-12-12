@@ -468,30 +468,32 @@ body.bryan-mode .month {
 <script>
 // ===============================
 //  TOKEN GUARD FOR BOO-RICULUM
-//  - Uses the SAME token + endpoint as Booha Adventure
-//  - No second login if token is valid
-//  - If missing/expired → quietly send back to Booha Gate
+//  (same logic as Booha Adventure)
 // ===============================
 (async function() {
   const API_BASE = 'https://www.bryanharper.tokyo';
   const GATE_URL = 'https://www.bryanharper.tokyo/booha-gate';
 
-  // 1. Read token from URL
+  function kickOut(message) {
+    console.warn('[Boo-Riculum] kickOut:', message);
+    alert(
+      (message || 'Your session has expired. Please log in again.') +
+      '\n\nセッションの確認に問題が発生しました。もう一度ブーハーゲートからログインしてください。'
+    );
+    window.location.href = GATE_URL;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
 
   console.log('[Boo-Riculum] token from URL:', token);
 
-  // 2. If there is NO token at all → go back to Booha Gate
-  //    (this covers bookmarks / direct visits)
   if (!token) {
-    console.warn('[Boo-Riculum] No token found, redirecting to Booha Gate');
-    window.location.replace(GATE_URL);
+    kickOut('No session found. Please log in through the Booha Gate.');
     return;
   }
 
   try {
-    // 3. Call the SAME verifyToken endpoint Booha Adventure uses
     const url = API_BASE + '/_functions/verifyToken?token=' + encodeURIComponent(token);
     console.log('[Boo-Riculum] calling:', url);
 
@@ -502,50 +504,50 @@ body.bryan-mode .month {
 
     if (!res.ok) {
       console.warn('[Boo-Riculum] HTTP error status:', res.status);
-      window.location.replace(GATE_URL);
+      kickOut('Session check failed. Please log in again.');
       return;
     }
 
     const data = await res.json();
     console.log('[Boo-Riculum] verifyToken response:', data);
 
-    // 4. If invalid or expired → send back to Booha Gate
     if (!data.valid) {
-      console.warn('[Boo-Riculum] Token invalid or expired, redirecting to Booha Gate');
-      window.location.replace(GATE_URL);
+      if (data.expired) {
+        kickOut('Your session has expired. Please log in again.');
+      } else {
+        kickOut('Your session is invalid. Please log in again.');
+      }
       return;
     }
 
     console.log('✅ [Boo-Riculum] Token valid — welcome',
       data.firstName, data.lastName, 'role:', data.role);
 
-    // 5. Optional: auto-logout when token expires (same as Booha Adventure)
     if (data.expiresAt) {
       const now = new Date();
       const expiresAt = new Date(data.expiresAt);
       const msRemaining = expiresAt.getTime() - now.getTime();
 
-      console.log('[Boo-Riculum] ms until expiry:', msRemaining);
+      console.log('[Boo-Riculum] ms remaining until expiry:', msRemaining);
 
       if (msRemaining > 0) {
         setTimeout(() => {
-          console.warn('[Boo-Riculum] Token timed out, redirecting to Booha Gate');
-          window.location.replace(GATE_URL);
+          kickOut('Your session has expired. Please log in again.');
         }, msRemaining);
       } else {
-        console.warn('[Boo-Riculum] Token already expired, redirecting to Booha Gate');
-        window.location.replace(GATE_URL);
+        kickOut('Your session has expired. Please log in again.');
       }
     }
 
-    // 6. If we got here: token is valid → do nothing, just let the page render normally
+    // If we reach here, token is valid → allow page to show normally
 
   } catch (err) {
     console.error('[Boo-Riculum] token verification error:', err);
-    window.location.replace(GATE_URL);
+    kickOut('There was a problem verifying your session. Please log in again.');
   }
 })();
 </script>
+
 
 <header>
   <h1 class="title-en">THE BOO-RICULUM</h1>
