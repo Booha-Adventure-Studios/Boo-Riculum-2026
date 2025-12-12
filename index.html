@@ -461,7 +461,67 @@ body.bryan-mode .month {
   filter: none;
 }
 
+/* =========================================
+   Back to Adventure button (fixed top-left)
+   ========================================= */
+
+.back-to-adventure {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 10px);
+  z-index: 10000;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(250, 250, 255, 0.5);
+  background: radial-gradient(circle at top left, #fde68a 0%, #f97316 40%, #7c2d12 100%);
+  color: #0b1020;
+  font-family: "Cinzel", "Noto Sans JP", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  box-shadow:
+    0 0 10px rgba(251, 191, 36, 0.9),
+    0 0 24px rgba(251, 191, 36, 0.7),
+    0 0 40px rgba(219, 39, 119, 0.8);
+  cursor: pointer;
+  transform-origin: left top;
+  transition:
+    transform 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    filter 0.18s ease-out;
+  backdrop-filter: blur(6px);
+}
+
+.back-to-adventure .back-main {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.back-to-adventure .back-sub {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.back-to-adventure:hover {
+  transform: scale(1.04) translateY(1px);
+  box-shadow:
+    0 0 16px rgba(250, 204, 21, 0.95),
+    0 0 36px rgba(249, 115, 22, 0.9),
+    0 0 56px rgba(219, 39, 119, 1);
+  filter: brightness(1.05);
+}
+
+.back-to-adventure:active {
+  transform: scale(0.98) translateY(2px);
+  box-shadow:
+    0 0 8px rgba(250, 204, 21, 0.75),
+    0 0 24px rgba(249, 115, 22, 0.7);
+}
 </style>
+
 </head>
 <body>
 
@@ -4754,35 +4814,87 @@ body.bryan-mode .month {
   });
 </script>
 
+<!-- 🔙 Back to Adventure button (fixed top-left) -->
+<button class="back-to-adventure" id="backToAdventureBtn">
+  <span class="back-main">← Back to the Adventure</span>
+  <span class="back-sub">アドベンチャーに戻る</span>
+</button>
+
 <!-- Bryan button must come BEFORE the Bryan-mode script -->
 <button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
 
+<!-- 🔙 Back to Adventure behaviour -->
 <script>
-  // ===============================
-  // Bryan mode toggle (teacher view)
-  // ===============================
-  (function(){
-    const btn = document.getElementById('bryanBtn');
-    if (!btn) return;
+  (function() {
+    const ADVENTURE_BASE = 'https://booha-adventure-studios.github.io/Booha-Adventure-2026/';
+    const GATE_URL = 'https://www.bryanharper.tokyo/booha-gate';
 
-    const PASSWORD = "him141amra803";
+    const btn = document.getElementById('backToAdventureBtn');
+    if (!btn) {
+      console.warn('[Boo-Riculum] Back to Adventure button not found');
+      return;
+    }
 
     btn.addEventListener('click', () => {
-      // Already in Bryan mode? turn it OFF
-      if (document.body.classList.contains('bryan-mode')) {
-        document.body.classList.remove('bryan-mode');
-        alert("Bryan mode: OFF (student view)");
+      // 1) Try to read token from URL
+      const params = new URLSearchParams(window.location.search);
+      let token = params.get('token');
+
+      // 2) Fallback: try sessionStorage (if query params got stripped)
+      if (!token) {
+        try {
+          const stored = sessionStorage.getItem('boohaToken');
+          if (stored) {
+            token = stored;
+            console.log('[Boo-Riculum] Back button using token from sessionStorage');
+          }
+        } catch (e) {
+          console.warn('[Boo-Riculum] Could not read sessionStorage for token:', e);
+        }
+      }
+
+      // 3) If still no token, bounce back to Booha Gate
+      if (!token) {
+        alert(
+          'Your session has expired. Please log in again.' +
+          '\n\nセッションが切れました。もう一度ブーハーゲートからログインしてください。'
+        );
+        window.location.href = GATE_URL;
         return;
       }
 
-      const input = prompt("Enter password for Bryan mode:");
-      if (input === null) return;
+      const url =
+        ADVENTURE_BASE +
+        (ADVENTURE_BASE.includes('?') ? '&' : '?') +
+        'token=' + encodeURIComponent(token);
 
-      if (input === PASSWORD) {
-        document.body.classList.add('bryan-mode');
-        alert("Bryan mode: ON\nAll weeks unlocked for teacher view.");
+      console.log('[Boo-Riculum] Back to Adventure →', url);
+      window.location.href = url;
+    });
+  })();
+</script>
+
+<!-- ===============================
+     Bryan mode (always-on + toggle)
+     =============================== -->
+<script>
+  (function(){
+    const btn = document.getElementById('bryanBtn');
+
+    // Always start in Bryan mode (teacher view, all sparkles / weeks unlocked)
+    document.body.classList.add('bryan-mode');
+
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      if (document.body.classList.contains('bryan-mode')) {
+        // Turn OFF → student view (locks months/weeks again)
+        document.body.classList.remove('bryan-mode');
+        alert("Bryan mode: OFF (student view)");
       } else {
-        alert("Password incorrect.");
+        // Turn ON → teacher view
+        document.body.classList.add('bryan-mode');
+        alert("Bryan mode: ON\nAll weeks + sparkles for teacher view.");
       }
     });
   })();
