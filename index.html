@@ -468,7 +468,8 @@ body.bryan-mode .month {
 <script>
 // ===============================
 //  TOKEN GUARD FOR BOO-RICULUM
-//  (same logic as Booha Adventure)
+//  - Tries URL first, then sessionStorage
+//  - Uses same verifyToken endpoint as Booha Adventure
 // ===============================
 (async function() {
   const API_BASE = 'https://www.bryanharper.tokyo';
@@ -484,10 +485,26 @@ body.bryan-mode .month {
   }
 
   const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
+  let token = params.get('token');
 
   console.log('[Boo-Riculum] token from URL:', token);
 
+  // 👉 NEW: if no token in URL, try sessionStorage
+  if (!token) {
+    try {
+      const stored = sessionStorage.getItem('boohaToken');
+      if (stored) {
+        token = stored;
+        console.log('[Boo-Riculum] recovered token from sessionStorage');
+      }
+    } catch (e) {
+      console.warn('[Boo-Riculum] could not read sessionStorage:', e);
+    }
+  }
+
+  console.log('[Boo-Riculum] final token used:', token);
+
+  // If still no token, send back to Booha Gate
   if (!token) {
     kickOut('No session found. Please log in through the Booha Gate.');
     return;
@@ -523,6 +540,7 @@ body.bryan-mode .month {
     console.log('✅ [Boo-Riculum] Token valid — welcome',
       data.firstName, data.lastName, 'role:', data.role);
 
+    // Auto-logout when token expires (same behaviour)
     if (data.expiresAt) {
       const now = new Date();
       const expiresAt = new Date(data.expiresAt);
@@ -539,7 +557,7 @@ body.bryan-mode .month {
       }
     }
 
-    // If we reach here, token is valid → allow page to show normally
+    // If we get here, token is valid → let the page render normally
 
   } catch (err) {
     console.error('[Boo-Riculum] token verification error:', err);
