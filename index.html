@@ -469,57 +469,100 @@ body.bryan-mode .month {
 // ===============================
 //  TOKEN GUARD FOR BOO-RICULUM
 // ===============================
+(async function() {
+  const API_BASE = 'https://www.bryanharper.tokyo';
+  const GATE_URL = 'https://www.bryanharper.tokyo/booha-gate';
 
-// 1. Read token from URL
-const urlParams = new URLSearchParams(window.location.search);
-const token = urlParams.get("token");
+  // Hide page until we know the token is OK
+  document.documentElement.style.opacity = '0';
 
-// 2. Hide the entire page until validation finishes
-document.documentElement.style.opacity = "0";
+  function kickOut(message) {
+    console.warn('[Boo-Riculum] kickOut:', message);
+    // If you still want an alert, uncomment:
+    // alert(
+    //   (message || 'Your session has expired. Please log in again.') +
+    //   '\n\nセッションの確認に問題が発生しました。もう一度ブーハーゲートからログインしてください。'
+    // );
+    window.location.href = GATE_URL;
+  }
 
-// 3. If no token at all → block immediately
-if (!token) {
-  document.body.innerHTML = `
-    <div style="padding:40px; text-align:center; color:white; font-family:system-ui">
-      <h2>Booha Gate Login Required</h2>
-      <p>Please return to Booha Gate and log in again.</p>
-    </div>
-  `;
-  document.documentElement.style.opacity = "1";
-} else {
-  // 4. Validate token using the same backend API as Booha Adventure
-  fetch("https://www.bryan-eikaiwa.com/_functions/validateToken", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token })
-  })
-  .then(res => res.json())
-  .then(data => {
-    // 5. If invalid → block page
-    if (!data.valid) {
-      document.body.innerHTML = `
-        <div style="padding:40px; text-align:center; color:white; font-family:system-ui">
-          <h2>Session Expired</h2>
-          <p>Please return to Booha Gate and log in again.</p>
-        </div>
-      `;
+  // 1. Read token from URL
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  console.log('[Boo-Riculum] token from URL:', token);
+
+  // 2. If no token → send back to Booha Gate
+  if (!token) {
+    kickOut('No session token found in URL.');
+    document.documentElement.style.opacity = '1';
+    return;
+  }
+
+  try {
+    // 3. Use the SAME verifyToken endpoint as Booha Adventure
+    const url = API_BASE + '/_functions/verifyToken?token=' + encodeURIComponent(token);
+    console.log('[Boo-Riculum] calling:', url);
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!res.ok) {
+      console.warn('[Boo-Riculum] HTTP error status:', res.status);
+      kickOut('Session check failed (HTTP error).');
+      document.documentElement.style.opacity = '1';
+      return;
     }
 
-    // 6. If valid → reveal the page normally
-    document.documentElement.style.opacity = "1";
-  })
-  .catch(err => {
-    console.error("Token check failed:", err);
-    document.body.innerHTML = `
-      <div style="padding:40px; text-align:center; color:white; font-family:system-ui">
-        <h2>Connection Error</h2>
-        <p>Please try again later.</p>
-      </div>
-    `;
-    document.documentElement.style.opacity = "1";
-  });
-}
+    const data = await res.json();
+    console.log('[Boo-Riculum] verifyToken response:', data);
+
+    // 4. Invalid / expired → redirect to Booha Gate
+    if (!data.valid) {
+      if (data.expired) {
+        kickOut('Session expired.');
+      } else {
+        kickOut('Invalid session.');
+      }
+      document.documentElement.style.opacity = '1';
+      return;
+    }
+
+    console.log('✅ [Boo-Riculum] Token valid — welcome',
+      data.firstName, data.lastName, 'role:', data.role);
+
+    // 5. Auto-logout when token expires
+    if (data.expiresAt) {
+      const now = new Date();
+      const expiresAt = new Date(data.expiresAt);
+      const msRemaining = expiresAt.getTime() - now.getTime();
+
+      console.log('[Boo-Riculum] ms until expiry:', msRemaining);
+
+      if (msRemaining > 0) {
+        setTimeout(() => {
+          kickOut('Session expired (timer).');
+        }, msRemaining);
+      } else {
+        kickOut('Session already expired when loading Boo-Riculum.');
+        document.documentElement.style.opacity = '1';
+        return;
+      }
+    }
+
+    // 6. If we’re still here, everything is good → show the page
+    document.documentElement.style.opacity = '1';
+
+  } catch (err) {
+    console.error('[Boo-Riculum] token verification error:', err);
+    kickOut('Error verifying session.');
+    document.documentElement.style.opacity = '1';
+  }
+})();
 </script>
+
   
   
 <header>
