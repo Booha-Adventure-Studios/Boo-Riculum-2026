@@ -4657,275 +4657,213 @@ body.bryan-mode .month {
 </main>
 
 <script>
-  // ===============================
-  // Booha 4-week window logic
-  // Jan–Dec 2026 Boo-riculum
-  // ===============================
+/* ===============================
+   Booha 4-week window logic
+   Jan–Dec 2026 Boo-riculum
+   ✅ Week 1 opens: Sun Dec 28, 2025 (JST)
+   ✅ Boo-riculum does NOT open early
+   ✅ Locked weeks cannot expand
+   ✅ Bryan mode (password) unlocks everything
+   =============================== */
 
-  const weekOrder = [
-    "2026-Jan-W1","2026-Jan-W2","2026-Jan-W3","2026-Jan-W4",
-    "2026-Feb-W1","2026-Feb-W2","2026-Feb-W3","2026-Feb-W4",
-    "2026-Mar-W1","2026-Mar-W2","2026-Mar-W3","2026-Mar-W4",
-    "2026-Apr-W1","2026-Apr-W2","2026-Apr-W3","2026-Apr-W4",
-    "2026-May-W1","2026-May-W2","2026-May-W3","2026-May-W4",
-    "2026-Jun-W1","2026-Jun-W2","2026-Jun-W3","2026-Jun-W4",
-    "2026-Jul-W1","2026-Jul-W2","2026-Jul-W3","2026-Jul-W4",
-    "2026-Aug-W1","2026-Aug-W2","2026-Aug-W3","2026-Aug-W4",
-    "2026-Sep-W1","2026-Sep-W2","2026-Sep-W3","2026-Sep-W4",
-    "2026-Oct-W1","2026-Oct-W2","2026-Oct-W3","2026-Oct-W4",
-    "2026-Nov-W1","2026-Nov-W2","2026-Nov-W3","2026-Nov-W4",
-    "2026-Dec-W1","2026-Dec-W2","2026-Dec-W3","2026-Dec-W4"
-  ];
+const weekOrder = [
+  "2026-Jan-W1","2026-Jan-W2","2026-Jan-W3","2026-Jan-W4",
+  "2026-Feb-W1","2026-Feb-W2","2026-Feb-W3","2026-Feb-W4",
+  "2026-Mar-W1","2026-Mar-W2","2026-Mar-W3","2026-Mar-W4",
+  "2026-Apr-W1","2026-Apr-W2","2026-Apr-W3","2026-Apr-W4",
+  "2026-May-W1","2026-May-W2","2026-May-W3","2026-May-W4",
+  "2026-Jun-W1","2026-Jun-W2","2026-Jun-W3","2026-Jun-W4",
+  "2026-Jul-W1","2026-Jul-W2","2026-Jul-W3","2026-Jul-W4",
+  "2026-Aug-W1","2026-Aug-W2","2026-Aug-W3","2026-Aug-W4",
+  "2026-Sep-W1","2026-Sep-W2","2026-Sep-W3","2026-Sep-W4",
+  "2026-Oct-W1","2026-Oct-W2","2026-Oct-W3","2026-Oct-W4",
+  "2026-Nov-W1","2026-Nov-W2","2026-Nov-W3","2026-Nov-W4",
+  "2026-Dec-W1","2026-Dec-W2","2026-Dec-W3","2026-Dec-W4"
+];
 
-  const BOOHA_YEAR = 2026;
-  const monthLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const OPEN_BEFORE_DAYS = 7; // open 1 week before teaching week
+const OPEN_BEFORE_DAYS = 0; // Boo-riculum opens ON the week (no early access)
 
-  function getWeekIdFromCalendar(baseDate) {
-    const now = baseDate || new Date();
-    const year = now.getFullYear();
-    const monthIndex = now.getMonth(); // 0=Jan ... 11=Dec
-    const day = now.getDate();
+// ✅ Booha Year 2026 — Week 1 opens on Sunday Dec 28, 2025 (JST local time)
+const BOOHA_START = new Date(2025, 11, 28); // 2025-12-28 (Dec=11)
 
-    if (year !== BOOHA_YEAR) {
-      return null;
-    }
+// localStorage key for Bryan mode persistence
+const BRYAN_KEY = "boohaBryanMode2026";
 
-    let weekNum = 1;
-    if (day >= 8 && day <= 14) {
-      weekNum = 2;
-    } else if (day >= 15 && day <= 21) {
-      weekNum = 3;
-    } else if (day >= 22) {
-      weekNum = 4;
-    }
+function isBryanMode(){
+  try { return localStorage.getItem(BRYAN_KEY) === "1"; }
+  catch { return false; }
+}
 
-    const monthLabel = monthLabels[monthIndex];
-    const id = `${BOOHA_YEAR}-${monthLabel}-W${weekNum}`;
+function setBryanMode(on){
+  try { localStorage.setItem(BRYAN_KEY, on ? "1" : "0"); }
+  catch {}
+  document.body.classList.toggle("bryan-mode", !!on);
+}
 
-    if (!weekOrder.includes(id)) {
-      console.warn("Calendar week ID not found in weekOrder:", id);
-      return null;
-    }
-    return id;
-  }
+function getWeekIdFromCalendar(baseDate){
+  const now = baseDate || new Date();
+  const MS_PER_DAY = 86400000;
 
-  // ------------------------------------------------
-  // 1. Determine:
-  //    - teachingWeekId (real current week, green)
-  //    - windowWeekId   (4-week window anchor, 7 days early)
-  // ------------------------------------------------
-  const now = new Date();
-  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const diffDays = Math.floor((now - BOOHA_START) / MS_PER_DAY);
+  if (diffDays < 0) return null;
 
-  const teachingWeekId = getWeekIdFromCalendar(now);
-  const windowWeekId   = getWeekIdFromCalendar(new Date(now.getTime() + OPEN_BEFORE_DAYS * MS_PER_DAY));
+  const weekIndex = Math.floor(diffDays / 7);
+  if (weekIndex < 0 || weekIndex >= weekOrder.length) return null;
 
-  const teachingIndex = teachingWeekId ? weekOrder.indexOf(teachingWeekId) : -1;
-  const windowIndex   = windowWeekId   ? weekOrder.indexOf(windowWeekId)   : -1;
+  return weekOrder[weekIndex];
+}
 
-  const weekNodes = Array.from(document.querySelectorAll('.month > details'));
-  const monthSections = Array.from(document.querySelectorAll('.month'));
+// ------------------------------------------------
+// 1) Determine teaching week + window anchor
+// ------------------------------------------------
+const now = new Date();
+const MS_PER_DAY = 86400000;
 
-  // Tag all as .week for CSS
-  weekNodes.forEach(el => el.classList.add('week'));
+const teachingWeekId = getWeekIdFromCalendar(now);
+const windowWeekId   = getWeekIdFromCalendar(new Date(now.getTime() + OPEN_BEFORE_DAYS * MS_PER_DAY));
 
-  if (weekNodes.length !== weekOrder.length) {
-    console.warn(
-      "Booha weekOrder length and .month > details count differ:",
-      weekOrder.length,
-      weekNodes.length
-    );
-  }
+const teachingIndex = teachingWeekId ? weekOrder.indexOf(teachingWeekId) : -1;
+const windowIndex   = windowWeekId   ? weekOrder.indexOf(windowWeekId)   : -1;
 
-  // If nothing should be open yet (before 2026 or very late)
-  if (windowIndex === -1) {
-    weekNodes.forEach(el => {
-      el.classList.remove('week-active','week-past','week-future','week-current');
-      el.classList.add('week-future'); // everything locked/grey
-    });
-    monthSections.forEach(month => {
-      month.classList.remove('current','month-active','month-past','month-future');
-      month.classList.add('month-future');
-    });
-  } else {
-    // ----------------------------------------
-    // 2. Build the 4-week student window
-    //    (windowWeek + previous 3)
-    // ----------------------------------------
-    const windowIndices = [];
-    const startIdx = Math.max(0, windowIndex - 3);
-    for (let i = startIdx; i <= windowIndex; i++) {
-      windowIndices.push(i);
-    }
+const weekNodes = Array.from(document.querySelectorAll(".month > details"));
+const monthSections = Array.from(document.querySelectorAll(".month"));
 
-    // ----------------------------------------
-    // 3. Apply week-active / week-past / week-future / week-current
-    // ----------------------------------------
-    weekNodes.forEach((el, idx) => {
-      el.classList.remove('week-active','week-past','week-future','week-current');
+weekNodes.forEach(el => el.classList.add("week"));
 
-      if (idx >= startIdx && idx <= windowIndex) {
-        el.classList.add('week-active');     // student can open these
-      } else if (idx < startIdx) {
-        el.classList.add('week-past');       // older than 4-week window
-      } else {
-        el.classList.add('week-future');     // later than 4-week window
-      }
+if (weekNodes.length !== weekOrder.length) {
+  console.warn("Booha weekOrder length and .month > details count differ:", weekOrder.length, weekNodes.length);
+}
 
-      // current teaching week = green glow
-      if (teachingIndex !== -1 && idx === teachingIndex && el.classList.contains('week-active')) {
-        el.classList.add('week-current');
-      }
-    });
+// ------------------------------------------------
+// 2) Apply classes
+//    Default behavior = backwards-looking 4-week window
+//    (current week + previous 3)
+// ------------------------------------------------
+const bryan = isBryanMode();
+document.body.classList.toggle("bryan-mode", bryan);
 
-    // ----------------------------------------
-    // 4. Month state classes
-    // ----------------------------------------
-    monthSections.forEach(month => {
-      month.classList.remove('current','month-active','month-past','month-future');
-
-      const weeksInMonth = weekNodes.filter(w => w.closest('.month') === month);
-      if (!weeksInMonth.length) return;
-
-      const indices = weeksInMonth.map(w => weekNodes.indexOf(w));
-
-      const hasActive       = indices.some(i => windowIndices.includes(i));
-      const hasTeachingWeek = teachingIndex !== -1 && indices.includes(teachingIndex);
-      const allPast         = indices.every(i => i < startIdx);
-      const allFuture       = indices.every(i => i > windowIndex);
-
-      if (hasTeachingWeek) {
-        month.classList.add('current','month-active');
-      } else if (hasActive) {
-        month.classList.add('month-active');
-      } else if (allFuture) {
-        month.classList.add('month-future');
-      } else if (allPast) {
-        month.classList.add('month-past');
-      } else {
-        month.classList.add('month-past');
-      }
-    });
-  }
-
-  // ----------------------------------------
-  // 5. Only one tab open at a time + sparkles
-  // ----------------------------------------
+if (bryan) {
+  // ✅ Bryan mode: unlock everything
   weekNodes.forEach(el => {
-    el.addEventListener('toggle', () => {
-      if (el.open) {
-        // close other details if this one just opened
-        weekNodes.forEach(other => {
-          if (other !== el && other.open) {
-            other.open = false;
-          }
-        });
-
-        // Only sparkle for active weeks (student-visible 4-week window)
-        if (el.classList.contains('week-active')) {
-          el.classList.add('sparkle-on');
-          setTimeout(() => {
-            el.classList.remove('sparkle-on');
-          }, 700);
-        }
-      }
-    });
+    el.classList.remove("week-past","week-future","week-current");
+    el.classList.add("week-active");
   });
-</script>
+  monthSections.forEach(month => {
+    month.classList.remove("current","month-active","month-past","month-future");
+    month.classList.add("month-active");
+  });
 
-<!-- 🔙 Back to Adventure button (fixed top-left) -->
-<button class="back-to-adventure" id="backToAdventureBtn">
-  <span class="back-main">← Back to the Adventure</span>
-  <span class="back-sub">アドベンチャーに戻る</span>
-</button>
+} else if (windowIndex === -1) {
+  // ✅ Not started yet: lock everything
+  weekNodes.forEach(el => {
+    el.classList.remove("week-active","week-past","week-future","week-current");
+    el.classList.add("week-future");
+  });
+  monthSections.forEach(month => {
+    month.classList.remove("current","month-active","month-past","month-future");
+    month.classList.add("month-future");
+  });
 
-<!-- Bryan button must come BEFORE the Bryan-mode script -->
-<button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
+} else {
+  const startIdx = Math.max(0, windowIndex - 3);
+  const windowIndices = [];
+  for (let i = startIdx; i <= windowIndex; i++) windowIndices.push(i);
 
-<!-- 🔙 Back to Adventure behaviour -->
-<script>
-  (function() {
-    const ADVENTURE_BASE = 'https://booha-adventure-studios.github.io/Booha-Adventure-2026/';
-    const GATE_URL = 'https://www.bryanharper.tokyo/booha-gate';
+  weekNodes.forEach((el, idx) => {
+    el.classList.remove("week-active","week-past","week-future","week-current");
 
-    const btn = document.getElementById('backToAdventureBtn');
-    if (!btn) {
-      console.warn('[Boo-Riculum] Back to Adventure button not found');
+    if (idx >= startIdx && idx <= windowIndex) el.classList.add("week-active");
+    else if (idx < startIdx) el.classList.add("week-past");
+    else el.classList.add("week-future");
+
+    // current teaching week = green glow (only if in active window)
+    if (teachingIndex !== -1 && idx === teachingIndex && el.classList.contains("week-active")) {
+      el.classList.add("week-current");
+    }
+  });
+
+  monthSections.forEach(month => {
+    month.classList.remove("current","month-active","month-past","month-future");
+
+    const weeksInMonth = weekNodes.filter(w => w.closest(".month") === month);
+    if (!weeksInMonth.length) return;
+
+    const indices = weeksInMonth.map(w => weekNodes.indexOf(w));
+
+    const hasActive       = indices.some(i => windowIndices.includes(i));
+    const hasTeachingWeek = teachingIndex !== -1 && indices.includes(teachingIndex);
+    const allPast         = indices.every(i => i < startIdx);
+    const allFuture       = indices.every(i => i > windowIndex);
+
+    if (hasTeachingWeek) month.classList.add("current","month-active");
+    else if (hasActive) month.classList.add("month-active");
+    else if (allFuture) month.classList.add("month-future");
+    else if (allPast) month.classList.add("month-past");
+    else month.classList.add("month-past");
+  });
+}
+
+// ------------------------------------------------
+// 3) Only one <details> open at a time + sparkles
+//    ✅ Locked weeks cannot expand
+// ------------------------------------------------
+weekNodes.forEach(el => {
+  el.addEventListener("toggle", () => {
+    if (!el.open) return;
+
+    // ✅ prevent opening locked weeks (unless Bryan mode)
+    if (!isBryanMode() && !el.classList.contains("week-active")) {
+      el.open = false;
       return;
     }
 
-    btn.addEventListener('click', () => {
-      // 1) Try to read token from URL
-      const params = new URLSearchParams(window.location.search);
-      let token = params.get('token');
-
-      // 2) Fallback: try sessionStorage (if query params got stripped)
-      if (!token) {
-        try {
-          const stored = sessionStorage.getItem('boohaToken');
-          if (stored) {
-            token = stored;
-            console.log('[Boo-Riculum] Back button using token from sessionStorage');
-          }
-        } catch (e) {
-          console.warn('[Boo-Riculum] Could not read sessionStorage for token:', e);
-        }
-      }
-
-      // 3) If still no token, bounce back to Booha Gate
-      if (!token) {
-        alert(
-          'Your session has expired. Please log in again.' +
-          '\n\nセッションが切れました。もう一度ブーハーゲートからログインしてください。'
-        );
-        window.location.href = GATE_URL;
-        return;
-      }
-
-      const url =
-        ADVENTURE_BASE +
-        (ADVENTURE_BASE.includes('?') ? '&' : '?') +
-        'token=' + encodeURIComponent(token);
-
-      console.log('[Boo-Riculum] Back to Adventure →', url);
-      window.location.href = url;
+    // close other details
+    weekNodes.forEach(other => {
+      if (other !== el && other.open) other.open = false;
     });
-  })();
+
+    // sparkle only for active weeks (or Bryan mode)
+    if (isBryanMode() || el.classList.contains("week-active")) {
+      el.classList.add("sparkle-on");
+      setTimeout(() => el.classList.remove("sparkle-on"), 700);
+    }
+  });
+});
+
+// ------------------------------------------------
+// 4) Bryan button (passworded toggle)
+//    Requires: <button id="bryanBtn">Bryan</button>
+// ------------------------------------------------
+(function(){
+  const btn = document.getElementById("bryanBtn");
+  if (!btn) return;
+
+  const PASSWORD = "him141amra803";
+
+  // If already enabled from storage, button can turn it off
+  btn.addEventListener("click", () => {
+    if (isBryanMode()) {
+      setBryanMode(false);
+      alert("Bryan mode: OFF (student view)");
+      // safest: reload so all week classes revert correctly
+      location.reload();
+      return;
+    }
+
+    const input = prompt("Enter password for Bryan mode:");
+    if (input === null) return;
+
+    if (input === PASSWORD) {
+      setBryanMode(true);
+      alert("Bryan mode: ON\nAll weeks unlocked for teacher view.");
+      location.reload();
+    } else {
+      alert("Password incorrect.");
+    }
+  });
+})();
 </script>
 
-<!-- ===============================
-     Bryan mode (passworded toggle)
-     =============================== -->
-<script>
-  (function(){
-    const btn = document.getElementById('bryanBtn');
-    if (!btn) return;
-
-    const PASSWORD = "him141amra803";
-
-    // Default: student view (NO Bryan mode on load)
-
-    btn.addEventListener('click', () => {
-      // If already in Bryan mode, turn it OFF (back to student view)
-      if (document.body.classList.contains('bryan-mode')) {
-        document.body.classList.remove('bryan-mode');
-        alert("Bryan mode: OFF (student view)");
-        return;
-      }
-
-      const input = prompt("Enter password for Bryan mode:");
-      if (input === null) return;
-
-      if (input === PASSWORD) {
-        document.body.classList.add('bryan-mode');
-        alert("Bryan mode: ON\nAll weeks unlocked for teacher view.");
-      } else {
-        alert("Password incorrect.");
-      }
-    });
-  })();
-</script>
 
 <!-- ===============================
      Sparkle logic for CURRENT week
