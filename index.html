@@ -289,85 +289,85 @@ body.bryan-mode .month{
       transform:translateY(-4px);
     }
   }
+  
 /* =========================================
-   Week & month visual states (year-long)
+   Week & month visual states (FINAL)
+   - Only 4-week window is clickable
+   - Past + Future = grey + not clickable
+   - Bryan mode unlocks everything
    ========================================= */
 
-/* Active weeks (all weeks up to the current one) */
-.week-active summary {
+/* Active weeks in the student window */
+.week-active summary{
   box-shadow: var(--slime-glow);
   border: 1px solid var(--slime);
   background: radial-gradient(circle at top left, rgba(102,255,107,.16), transparent 55%);
 }
-.week-active .wknum {
+.week-active .wknum{
   box-shadow: 0 0 0 2px rgba(0,0,0,.7), 0 0 0 3px rgba(102,255,107,.55);
   transform: translateY(-1px);
 }
 
-/* CURRENT week – gold glow instead of slime */
-.week-current summary {
+/* CURRENT week highlight */
+.week-current summary{
   border-color: var(--gold) !important;
   box-shadow: var(--gold-glow) !important;
   background:
     radial-gradient(circle at top left, rgba(255,223,77,.32), transparent 55%),
     radial-gradient(circle at bottom right, rgba(255,255,255,.06), transparent 60%);
 }
-.week-current .wknum {
+.week-current .wknum{
   box-shadow: 0 0 0 2px rgba(0,0,0,.8), 0 0 0 3px rgba(255,223,77,.9);
   transform: translateY(-2px) scale(1.03);
 }
 
-
-/* Past weeks – still unlocked & clickable (students can revisit) */
-.week-past summary {
-  opacity: 1;
-  filter: none;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.week-past .panel {
-  display: block !important;
-}
-
-/* Future weeks – visible but grey + unclickable */
-.week-future summary {
+/* Past and future weeks: grey + not clickable */
+.week-past summary,
+.week-future summary{
   opacity: .35;
   filter: grayscale(1);
   cursor: default;
   pointer-events: none; /* cannot open/close */
 }
 
-/* Make sure locked future weeks never show their panel content */
-.week-future .panel {
+/* Make sure locked/expired weeks never show their panel content */
+.week-past .panel,
+.week-future .panel{
   display: none !important;
 }
 
-/* Month states, based on whether they contain active weeks */
-.month-past {
-  opacity: 1;
-  filter: none;
-  pointer-events: auto; /* past months are still usable */
-}
-
-.month-future {
+/* Month states */
+.month-past,
+.month-future{
   opacity: .45;
   filter: grayscale(.9);
-  pointer-events: none; /* locked for students until their first week unlocks */
+  pointer-events: none; /* locked/expired months not clickable */
 }
 
 .month-active,
-.month.current {
-  opacity: 1;
-  filter: none;
-  pointer-events: auto; /* clickable */
-}
-
-/* Bryan mode re-enables everything */
-body.bryan-mode .month {
+.month.current{
   opacity: 1;
   filter: none;
   pointer-events: auto;
 }
+
+/* Bryan mode unlocks everything */
+body.bryan-mode .month{
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+}
+body.bryan-mode .week-past summary,
+body.bryan-mode .week-future summary{
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+}
+body.bryan-mode .week-past .panel,
+body.bryan-mode .week-future .panel{
+  display: block !important;
+}
+
 
 
 /* =========================================
