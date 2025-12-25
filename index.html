@@ -614,32 +614,44 @@ body.bryan-mode .month {
 
 <script>
 /* ===============================
-   Back to Adventure navigation
+   Back to Adventure navigation (FIXED)
    =============================== */
 (function(){
   const btn = document.getElementById("backToAdventureBtn");
-  if(!btn) return;
+  if (!btn) return;
 
-  const ADVENTURE_URL = "https://www.bryanharper.tokyo/booha-adventure/";
+  // ✅ REAL, EXISTING PAGE
+  // Change this later if/when you create a real /booha-adventure page
+  const BACK_URL = "https://www.bryanharper.tokyo/booha-gate";
+
+  function getToken(){
+    try {
+      return sessionStorage.getItem("boohaToken") || "";
+    } catch(e){
+      return "";
+    }
+  }
 
   btn.addEventListener("click", () => {
-    let token = "";
-    try{
-      token = sessionStorage.getItem("boohaToken") || "";
-    }catch(e){}
-
+    const token = getToken();
     const url = token
-      ? ADVENTURE_URL + "?token=" + encodeURIComponent(token)
-      : ADVENTURE_URL;
+      ? BACK_URL + "?token=" + encodeURIComponent(token)
+      : BACK_URL;
 
-    try{
-      window.top.location.href = url;
-    }catch(e){
-      location.href = url;
+    // ✅ iframe-safe navigation
+    try {
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } catch (e) {
+      window.location.href = url;
     }
   });
 })();
 </script>
+
 
 <header>
   <h1 class="title-en">THE BOO-RICULUM</h1>
