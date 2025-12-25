@@ -548,19 +548,24 @@ body.bryan-mode .month {
     0 0 56px rgba(219, 39, 119, 1);
   filter: brightness(1.05);
 }
-
-.back-to-adventure:active {
-  transform: scale(0.98) translateY(2px);
-  box-shadow:
-    0 0 8px rgba(250, 204, 21, 0.75),
-    0 0 24px rgba(249, 115, 22, 0.7);
-}
 </style>
-
 </head>
+
 <body>
 
+<!-- 🔙 Back to Adventure button (fixed top-left) -->
+<button class="back-to-adventure" id="backToAdventureBtn" type="button">
+  <span class="back-main">← Back to the Adventure</span>
+  <span class="back-sub">アドベンチャーに戻る</span>
+</button>
+
+<!-- Bryan button (bottom-left of PAGE) -->
+<button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
+
 <script>
+  /* token guard / week logic scripts */
+</script>
+
 // ===============================
 //  TOKEN GUARD FOR BOO-RICULUM
 //  - Tries URL first, then sessionStorage
