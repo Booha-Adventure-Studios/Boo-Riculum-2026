@@ -425,10 +425,12 @@ details.week-current.sparkle-on summary::after {
 
 /* Bottom-left semi-transparent "Bryan" button */
 .bryan-btn {
-  position: absolute;   /* ← attach to the page, not the screen */
+  position: absolute;          /* stays at bottom of PAGE */
   left: 12px;
   bottom: 12px;
-  z-index: 9999;
+  z-index: 20001;              /* above locked months/weeks */
+  pointer-events: auto;        /* ✅ clickable even when page is locked */
+
   padding: 6px 14px;
   border-radius: 999px;
   border: 1px solid rgba(148,163,184,.6);
@@ -453,6 +455,7 @@ details.week-current.sparkle-on summary::after {
 .bryan-btn:active {
   transform: none !important;
 }
+
 
 /* When Bryan mode is ON, show a tiny glow on the button */
 body.bryan-mode .bryan-btn {
@@ -486,33 +489,45 @@ body.bryan-mode .month {
    ========================================= */
 
 .back-to-adventure {
-  position: fixed;
+  position: fixed;                 /* stays on screen */
   top: calc(env(safe-area-inset-top, 0px) + 10px);
   left: calc(env(safe-area-inset-left, 0px) + 10px);
-  z-index: 10000;
+
+  z-index: 20002;                  /* above months & Bryan button */
+  pointer-events: auto;            /* ✅ always clickable */
+
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid rgba(250, 250, 255, 0.5);
-  background: radial-gradient(circle at top left, #fde68a 0%, #f97316 40%, #7c2d12 100%);
+  background: radial-gradient(
+    circle at top left,
+    #fde68a 0%,
+    #f97316 40%,
+    #7c2d12 100%
+  );
   color: #0b1020;
   font-family: "Cinzel", "Noto Sans JP", system-ui, sans-serif;
   font-size: 12px;
   font-weight: 700;
+
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+
   box-shadow:
     0 0 10px rgba(251, 191, 36, 0.9),
     0 0 24px rgba(251, 191, 36, 0.7),
     0 0 40px rgba(219, 39, 119, 0.8);
+
   cursor: pointer;
   transform-origin: left top;
+  backdrop-filter: blur(6px);
+
   transition:
     transform 0.18s ease-out,
     box-shadow 0.18s ease-out,
     filter 0.18s ease-out;
-  backdrop-filter: blur(6px);
 }
 
 .back-to-adventure .back-main {
