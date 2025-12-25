@@ -553,10 +553,11 @@ body.bryan-mode .month {
 
 <!-- Bryan button -->
 <button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
+  
 
 <script>
 /* ===============================
-   TOKEN GUARD (fixed + persistent)
+   TOKEN GUARD (clean + persistent)
    =============================== */
 (async function(){
   const API_BASE = "https://www.bryanharper.tokyo";
@@ -571,19 +572,16 @@ body.bryan-mode .month {
   }
 
   const params = new URLSearchParams(location.search);
-  let token = params.get("token");
+  let token = params.get("token") || "";
 
   // ✅ URL → sessionStorage → persist
   try{
     if(!token){
-      const stored = sessionStorage.getItem("boohaToken");
-      if(stored){
-        token = stored;
-        console.log("[Boo-Riculum] recovered token from sessionStorage");
-      }
+      token = sessionStorage.getItem("boohaToken") || "";
+      if(token) console.log("[Boo-Riculum] recovered token from sessionStorage");
     }
     if(token){
-      sessionStorage.setItem("boohaToken", token);
+      sessionStorage.setItem("boohaToken", token); // ✅ keep this
     }
   }catch(e){
     console.warn("[Boo-Riculum] sessionStorage error:", e);
@@ -597,14 +595,21 @@ body.bryan-mode .month {
   }
 
   try{
-    const res = await fetch(
-      API_BASE + "/_functions/verifyToken?token=" + encodeURIComponent(token)
-    );
-    const data = await res.json();
-    if(!data.valid){
+    const url = API_BASE + "/_functions/verifyToken?token=" + encodeURIComponent(token);
+    const res = await fetch(url, { method:"GET", headers:{ "Accept":"application/json" } });
+
+    if(!res.ok){
+      kickOut("Session verification failed.");
+      return;
+    }
+
+    const data = await res.json().catch(()=>null);
+    if(!data || !data.valid){
       kickOut("Session invalid or expired.");
       return;
     }
+
+    // ✅ token valid → allow page to run
   }catch(err){
     console.error(err);
     kickOut("Session verification failed.");
@@ -612,23 +617,27 @@ body.bryan-mode .month {
 })();
 </script>
 
+
   
 <script>
 /* ===============================
-   Back to Adventure navigation (FIXED)
+   Back to Adventure navigation (CORRECT)
    =============================== */
 (function(){
   const btn = document.getElementById("backToAdventureBtn");
   if (!btn) return;
 
-  // ✅ REAL, EXISTING PAGE
-  // Change this later if/when you create a real /booha-adventure page
-  const BACK_URL = "https://www.bryanharper.tokyo/booha-gate";
+  // ✅ REAL Adventure page (GitHub Pages)
+  const BACK_URL = "https://booha-adventure-studios.github.io/Booha-Adventure-2026/";
 
   function getToken(){
-    try {
+    // Prefer current URL token, fallback to sessionStorage
+    try{
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get("token");
+      if (fromUrl) return fromUrl;
       return sessionStorage.getItem("boohaToken") || "";
-    } catch(e){
+    }catch(e){
       return "";
     }
   }
@@ -636,17 +645,17 @@ body.bryan-mode .month {
   btn.addEventListener("click", () => {
     const token = getToken();
     const url = token
-      ? BACK_URL + "?token=" + encodeURIComponent(token)
+      ? (BACK_URL + "?token=" + encodeURIComponent(token))
       : BACK_URL;
 
-    // ✅ iframe-safe navigation
-    try {
+    // Try top-nav if embedded, fallback to same window
+    try{
       if (window.top && window.top !== window.self) {
         window.top.location.href = url;
       } else {
         window.location.href = url;
       }
-    } catch (e) {
+    }catch(e){
       window.location.href = url;
     }
   });
