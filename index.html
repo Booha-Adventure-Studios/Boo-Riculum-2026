@@ -569,114 +569,102 @@ body.bryan-mode .month {
 // ===============================
 //  TOKEN GUARD FOR BOO-RICULUM
 //  - Tries URL first, then sessionStorage
-//  - Verifies token via /_functions/verifyToken
-//  - ✅ Persists token to sessionStorage (for Back-to-Adventure)
+//  - Uses same verifyToken endpoint as Booha Adventure
 // ===============================
-(async function () {
-  const API_BASE = "https://www.bryanharper.tokyo";
-  const GATE_URL = "https://www.bryanharper.tokyo/booha-gate";
+(async function() {
+  const API_BASE = 'https://www.bryanharper.tokyo';
+  const GATE_URL = 'https://www.bryanharper.tokyo/booha-gate';
 
   function kickOut(message) {
-    console.warn("[Boo-Riculum] kickOut:", message);
+    console.warn('[Boo-Riculum] kickOut:', message);
     alert(
-      (message || "Your session has expired. Please log in again.") +
-        "\n\nセッションの確認に問題が発生しました。もう一度ブーハーゲートからログインしてください。"
+      (message || 'Your session has expired. Please log in again.') +
+      '\n\nセッションの確認に問題が発生しました。もう一度ブーハーゲートからログインしてください。'
     );
     window.location.href = GATE_URL;
   }
 
   const params = new URLSearchParams(window.location.search);
-  let token = params.get("token");
+  let token = params.get('token');
 
-  console.log("[Boo-Riculum] token from URL:", token);
+  console.log('[Boo-Riculum] token from URL:', token);
 
-  // If no token in URL, try sessionStorage
+  // 👉 NEW: if no token in URL, try sessionStorage
   if (!token) {
     try {
-      const stored = sessionStorage.getItem("boohaToken");
+      const stored = sessionStorage.getItem('boohaToken');
       if (stored) {
         token = stored;
-        console.log("[Boo-Riculum] recovered token from sessionStorage");
+        console.log('[Boo-Riculum] recovered token from sessionStorage');
       }
     } catch (e) {
-      console.warn("[Boo-Riculum] could not read sessionStorage:", e);
+      console.warn('[Boo-Riculum] could not read sessionStorage:', e);
     }
   }
 
-  console.log("[Boo-Riculum] final token used:", token);
+  console.log('[Boo-Riculum] final token used:', token);
 
   // If still no token, send back to Booha Gate
   if (!token) {
-    kickOut("No session found. Please log in through the Booha Gate.");
+    kickOut('No session found. Please log in through the Booha Gate.');
     return;
   }
 
-  // ✅ Persist token for Back button + refreshes
   try {
-    sessionStorage.setItem("boohaToken", token);
-  } catch (e) {
-    console.warn("[Boo-Riculum] could not write sessionStorage:", e);
-  }
-
-  try {
-    const url =
-      API_BASE + "/_functions/verifyToken?token=" + encodeURIComponent(token);
-    console.log("[Boo-Riculum] calling:", url);
+    const url = API_BASE + '/_functions/verifyToken?token=' + encodeURIComponent(token);
+    console.log('[Boo-Riculum] calling:', url);
 
     const res = await fetch(url, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
     });
 
     if (!res.ok) {
-      console.warn("[Boo-Riculum] HTTP error status:", res.status);
-      kickOut("Session check failed. Please log in again.");
+      console.warn('[Boo-Riculum] HTTP error status:', res.status);
+      kickOut('Session check failed. Please log in again.');
       return;
     }
 
     const data = await res.json();
-    console.log("[Boo-Riculum] verifyToken response:", data);
+    console.log('[Boo-Riculum] verifyToken response:', data);
 
-    if (!data || !data.valid) {
-      kickOut(
-        data && data.expired
-          ? "Your session has expired. Please log in again."
-          : "Your session is invalid. Please log in again."
-      );
+    if (!data.valid) {
+      if (data.expired) {
+        kickOut('Your session has expired. Please log in again.');
+      } else {
+        kickOut('Your session is invalid. Please log in again.');
+      }
       return;
     }
 
-    console.log(
-      "✅ [Boo-Riculum] Token valid — welcome",
-      data.firstName,
-      data.lastName,
-      "role:",
-      data.role
-    );
+    console.log('✅ [Boo-Riculum] Token valid — welcome',
+      data.firstName, data.lastName, 'role:', data.role);
 
-    // Auto-logout when token expires
+    // Auto-logout when token expires (same behaviour)
     if (data.expiresAt) {
+      const now = new Date();
       const expiresAt = new Date(data.expiresAt);
-      const msRemaining = expiresAt.getTime() - Date.now();
+      const msRemaining = expiresAt.getTime() - now.getTime();
 
-      console.log("[Boo-Riculum] ms remaining until expiry:", msRemaining);
+      console.log('[Boo-Riculum] ms remaining until expiry:', msRemaining);
 
       if (msRemaining > 0) {
         setTimeout(() => {
-          kickOut("Your session has expired. Please log in again.");
+          kickOut('Your session has expired. Please log in again.');
         }, msRemaining);
       } else {
-        kickOut("Your session has expired. Please log in again.");
+        kickOut('Your session has expired. Please log in again.');
       }
     }
+
+    // If we get here, token is valid → let the page render normally
+
   } catch (err) {
-    console.error("[Boo-Riculum] token verification error:", err);
-    kickOut("There was a problem verifying your session. Please log in again.");
+    console.error('[Boo-Riculum] token verification error:', err);
+    kickOut('There was a problem verifying your session. Please log in again.');
   }
 })();
 </script>
-
 
 <header>
   <h1 class="title-en">THE BOO-RICULUM</h1>
