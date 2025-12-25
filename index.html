@@ -484,181 +484,159 @@ body.bryan-mode .month {
   filter: none;
 }
 
+
 <!-- =========================================
      Back to Adventure button (fixed top-left)
      ========================================= -->
 <style>
-.back-to-adventure{
-  position: fixed; /* stays on screen */
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  left: calc(env(safe-area-inset-left, 0px) + 10px);
+  .back-to-adventure{
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: calc(env(safe-area-inset-left, 0px) + 10px);
+    z-index: 20002;
+    pointer-events: auto;
 
-  z-index: 20002;       /* above everything */
-  pointer-events: auto; /* always clickable */
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(250, 250, 255, 0.5);
+    background: radial-gradient(circle at top left, #fde68a 0%, #f97316 40%, #7c2d12 100%);
+    color: #0b1020;
 
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(250, 250, 255, 0.5);
-  background: radial-gradient(circle at top left, #fde68a 0%, #f97316 40%, #7c2d12 100%);
-  color: #0b1020;
+    font-family: "Cinzel", "Noto Sans JP", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
 
-  font-family: "Cinzel", "Noto Sans JP", system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
 
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+    box-shadow:
+      0 0 10px rgba(251, 191, 36, 0.9),
+      0 0 24px rgba(251, 191, 36, 0.7),
+      0 0 40px rgba(219, 39, 119, 0.8);
 
-  box-shadow:
-    0 0 10px rgba(251, 191, 36, 0.9),
-    0 0 24px rgba(251, 191, 36, 0.7),
-    0 0 40px rgba(219, 39, 119, 0.8);
+    cursor: pointer;
+    transform-origin: left top;
+    backdrop-filter: blur(6px);
+    transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, filter 0.18s ease-out;
+  }
 
-  cursor: pointer;
-  transform-origin: left top;
-  backdrop-filter: blur(6px);
+  .back-to-adventure .back-main{ font-size: 11px; letter-spacing: 0.04em; }
+  .back-to-adventure .back-sub{  font-size: 10px; letter-spacing: 0.06em; }
 
-  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, filter 0.18s ease-out;
-}
-
-.back-to-adventure .back-main{
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-
-.back-to-adventure .back-sub{
-  font-size: 10px;
-  letter-spacing: 0.06em;
-}
-
-.back-to-adventure:hover{
-  transform: scale(1.04) translateY(1px);
-  box-shadow:
-    0 0 16px rgba(250, 204, 21, 0.95),
-    0 0 36px rgba(249, 115, 22, 0.9),
-    0 0 56px rgba(219, 39, 119, 1);
-  filter: brightness(1.05);
-}
-
-.back-to-adventure:active{
-  transform: scale(0.98) translateY(2px);
-  box-shadow:
-    0 0 8px rgba(250, 204, 21, 0.75),
-    0 0 24px rgba(249, 115, 22, 0.7);
-}
+  .back-to-adventure:hover{
+    transform: scale(1.04) translateY(1px);
+    box-shadow:
+      0 0 16px rgba(250, 204, 21, 0.95),
+      0 0 36px rgba(249, 115, 22, 0.9),
+      0 0 56px rgba(219, 39, 119, 1);
+    filter: brightness(1.05);
+  }
+  .back-to-adventure:active{
+    transform: scale(0.98) translateY(2px);
+    box-shadow:
+      0 0 8px rgba(250, 204, 21, 0.75),
+      0 0 24px rgba(249, 115, 22, 0.7);
+  }
 </style>
 
-<!-- 🔙 Back to Adventure button (fixed top-left) -->
+</head>
+<body>
+
+<!-- 🔙 Back to Adventure button -->
 <button class="back-to-adventure" id="backToAdventureBtn" type="button">
   <span class="back-main">← Back to the Adventure</span>
   <span class="back-sub">アドベンチャーに戻る</span>
 </button>
 
-
-<!-- Bryan button (bottom-left of PAGE) -->
+<!-- Bryan button -->
 <button type="button" class="bryan-btn" id="bryanBtn">Bryan</button>
 
 <script>
-  /* token guard / week logic scripts */
-// ===============================
-//  TOKEN GUARD FOR BOO-RICULUM
-//  - Tries URL first, then sessionStorage
-//  - Uses same verifyToken endpoint as Booha Adventure
-// ===============================
-(async function() {
-  const API_BASE = 'https://www.bryanharper.tokyo';
-  const GATE_URL = 'https://www.bryanharper.tokyo/booha-gate';
+/* ===============================
+   TOKEN GUARD (fixed + persistent)
+   =============================== */
+(async function(){
+  const API_BASE = "https://www.bryanharper.tokyo";
+  const GATE_URL = "https://www.bryanharper.tokyo/booha-gate";
 
-  function kickOut(message) {
-    console.warn('[Boo-Riculum] kickOut:', message);
+  function kickOut(msg){
     alert(
-      (message || 'Your session has expired. Please log in again.') +
-      '\n\nセッションの確認に問題が発生しました。もう一度ブーハーゲートからログインしてください。'
+      (msg || "Your session has expired.") +
+      "\n\nセッションの確認に問題が発生しました。"
     );
-    window.location.href = GATE_URL;
+    location.href = GATE_URL;
   }
 
-  const params = new URLSearchParams(window.location.search);
-  let token = params.get('token');
+  const params = new URLSearchParams(location.search);
+  let token = params.get("token");
 
-  console.log('[Boo-Riculum] token from URL:', token);
-
-  // 👉 NEW: if no token in URL, try sessionStorage
-  if (!token) {
-    try {
-      const stored = sessionStorage.getItem('boohaToken');
-      if (stored) {
+  // ✅ URL → sessionStorage → persist
+  try{
+    if(!token){
+      const stored = sessionStorage.getItem("boohaToken");
+      if(stored){
         token = stored;
-        console.log('[Boo-Riculum] recovered token from sessionStorage');
+        console.log("[Boo-Riculum] recovered token from sessionStorage");
       }
-    } catch (e) {
-      console.warn('[Boo-Riculum] could not read sessionStorage:', e);
     }
+    if(token){
+      sessionStorage.setItem("boohaToken", token);
+    }
+  }catch(e){
+    console.warn("[Boo-Riculum] sessionStorage error:", e);
   }
 
-  console.log('[Boo-Riculum] final token used:', token);
+  console.log("[Boo-Riculum] final token:", token);
 
-  // If still no token, send back to Booha Gate
-  if (!token) {
-    kickOut('No session found. Please log in through the Booha Gate.');
+  if(!token){
+    kickOut("No session found. Please log in again.");
     return;
   }
 
-  try {
-    const url = API_BASE + '/_functions/verifyToken?token=' + encodeURIComponent(token);
-    console.log('[Boo-Riculum] calling:', url);
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!res.ok) {
-      console.warn('[Boo-Riculum] HTTP error status:', res.status);
-      kickOut('Session check failed. Please log in again.');
-      return;
-    }
-
+  try{
+    const res = await fetch(
+      API_BASE + "/_functions/verifyToken?token=" + encodeURIComponent(token)
+    );
     const data = await res.json();
-    console.log('[Boo-Riculum] verifyToken response:', data);
-
-    if (!data.valid) {
-      if (data.expired) {
-        kickOut('Your session has expired. Please log in again.');
-      } else {
-        kickOut('Your session is invalid. Please log in again.');
-      }
+    if(!data.valid){
+      kickOut("Session invalid or expired.");
       return;
     }
-
-    console.log('✅ [Boo-Riculum] Token valid — welcome',
-      data.firstName, data.lastName, 'role:', data.role);
-
-    // Auto-logout when token expires (same behaviour)
-    if (data.expiresAt) {
-      const now = new Date();
-      const expiresAt = new Date(data.expiresAt);
-      const msRemaining = expiresAt.getTime() - now.getTime();
-
-      console.log('[Boo-Riculum] ms remaining until expiry:', msRemaining);
-
-      if (msRemaining > 0) {
-        setTimeout(() => {
-          kickOut('Your session has expired. Please log in again.');
-        }, msRemaining);
-      } else {
-        kickOut('Your session has expired. Please log in again.');
-      }
-    }
-
-    // If we get here, token is valid → let the page render normally
-
-  } catch (err) {
-    console.error('[Boo-Riculum] token verification error:', err);
-    kickOut('There was a problem verifying your session. Please log in again.');
+  }catch(err){
+    console.error(err);
+    kickOut("Session verification failed.");
   }
+})();
+</script>
+
+<script>
+/* ===============================
+   Back to Adventure navigation
+   =============================== */
+(function(){
+  const btn = document.getElementById("backToAdventureBtn");
+  if(!btn) return;
+
+  const ADVENTURE_URL = "https://www.bryanharper.tokyo/booha-adventure";
+
+  btn.addEventListener("click", () => {
+    let token = "";
+    try{
+      token = sessionStorage.getItem("boohaToken") || "";
+    }catch(e){}
+
+    const url = token
+      ? ADVENTURE_URL + "?token=" + encodeURIComponent(token)
+      : ADVENTURE_URL;
+
+    try{
+      window.top.location.href = url;
+    }catch(e){
+      location.href = url;
+    }
+  });
 })();
 </script>
 
@@ -668,6 +646,7 @@ body.bryan-mode .month {
 </header>
 
 <main id="root">
+
 
   <!-- =========================
        JANUARY (FILLED CONTENT)
